@@ -23,6 +23,8 @@
 #include "unistd.h"
 #include "esp_timer.h"
 #include "Date.h"
+#include <time.h>
+     
 static const char *TAG = "i2c-simple-example";
 
 char buffer[10];
@@ -30,7 +32,9 @@ char buffer[10];
 int counter = 0 ;
 int tmp;
 int hour,minute,second;
-CDate date;
+Cdate date;
+clock_t start, end;
+double cpu_time_used;
 /**
  * @brief i2c master initialization
  */
@@ -61,6 +65,10 @@ void Delay(int n,int m){
 }
 void Digital_Clock(void *arg);
 void Digital_Clock(void *arg){
+     start = clock();
+   	date.day = 5;
+   	date.month = 5;
+   	date.year = 2024;
 	counter++;
 	tmp = counter;
 	hour = tmp/3600;
@@ -82,22 +90,24 @@ void Digital_Clock(void *arg){
     lcd_send_string(buffer);
     
         
-    sprintf(buffer, "%d", date.day);
+	sprintf(buffer, "%d", date.day);
     lcd_put_cur(0, 8);
     lcd_send_string(buffer);
     lcd_send_string("/");
     
-    sprintf(buffer, "%d", date.month);
+	sprintf(buffer, "%d", date.month);
     lcd_send_string(buffer);
     lcd_send_string("/");
 	   
-    sprintf(buffer, "%d", date.year);
+	sprintf(buffer, "%d", date.year);
     lcd_send_string(buffer);
 	   
     if (counter == 86400 ){
     	counter = 0;
     	CDate_Increment(&date);
 	}
+	end = clock();
+	cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 }	
 void app_main(void)
 {
@@ -106,7 +116,7 @@ void app_main(void)
 	
     lcd_init();
     lcd_clear();
-	
+    CDate date; 
 //    Khoi tao timer
 	const esp_timer_create_args_t periodic_timer_args ={
 		.callback = &Digital_Clock,
@@ -116,7 +126,7 @@ void app_main(void)
 	
 	esp_timer_create(&periodic_timer_args,&periodic_timer);
 	while (1){
-	esp_timer_start_periodic(periodic_timer,1000000);
+	esp_timer_start_periodic(periodic_timer,1000000 - cpu_time_used*1000 );
 	}
 	
 }
