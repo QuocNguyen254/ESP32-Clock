@@ -6,17 +6,24 @@
 #include "esp_timer.h"
 #include "Date.h"
 #include <time.h>
+//Moi them vao
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
      
 static const char *TAG = "i2c-simple-example";
 
-char buffer[10];
+char buffer[50];
 
 int counter = 0 ;
 int tmp;
 int hour,minute,second;
 CDate date;
-clock_t start, end;
-double cpu_time_used;
+uint64_t start_time;
+uint64_t end_time;
+uint64_t elapsed_time;
 /**
  * @brief i2c master initialization
  */
@@ -37,10 +44,65 @@ static esp_err_t i2c_master_init(void)
 
     return i2c_driver_install(i2c_master_port, conf.mode, 0, 0, 0);
 }
+void Print_Weather_Data(char* ssid,char* password,String URL,String ApiKey,String lat,String lon){
 
+	WiFi.begin(ssid, password);
+
+	while (WiFi.status() != WL_CONNECTED) {
+	    delay(500);
+	    lcd_put_cur(0, 4);
+	    lcd_send_string(".");
+	}
+	
+	if (WiFi.status() == WL_CONNECTED) {
+
+    HTTPClient http;
+
+    //Set HTTP Request Final URL with Location and API key information
+    http.begin(URL + "lat=" + lat + "&lon=" + lon + "&units=metric&appid=" + ApiKey);
+
+    // start connection and send HTTP Request
+    int httpCode = http.GET();
+
+    // httpCode will be negative on error
+    if (httpCode > 0) {
+
+	      //Read Data as a JSON string
+	      String JSON_Data = http.getString();
+	
+	      //Retrieve some information about the weather from the JSON format
+	      DynamicJsonDocument doc(2048);
+	      deserializeJson(doc, JSON_Data);
+	      JsonObject obj = doc.as<JsonObject>();
+	
+	      //Display the Current Weather Info
+	      const char* description = obj["weather"][0]["description"].as<const char*>();
+	      const float temp = obj["main"]["temp"].as<float>();
+	      const float humidity = obj["main"]["humidity"].as<float>();
+	
+	      lcd.clear();
+	      lcd_put_cur(0,1);
+	      sprintf(buffer, "%s", description);	      
+	      lcd.setCursor(1, 0);
+	      sprintf(buffer, "%d", temp);
+	      lcd_send_string(" C, ");
+	      sprintf(buffer, "%d", humidity);
+	      lcd_send_string(" %");
+	
+	    } else {
+	      Serial.println("Error!");
+	      lcd_send_string("Error!");
+	      lcd.clear();
+	      lcd_send_string("Can't Get DATA!");
+	    }
+	
+	    http.end();
+
+  	}
+}
 void Digital_Clock(void *arg);
 void Digital_Clock(void *arg){
-    start = clock();
+	start_time = esp_timer_get_time();
 	counter++;
 	tmp = counter;
 	hour = tmp/3600;
@@ -78,8 +140,8 @@ void Digital_Clock(void *arg){
     	counter = 0;
     	CDate_Increment(&date);
 	}
-	end = clock();
-	cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	end_time = esp_timer_get_time();
+    elapsed_time = end_time - start_time;
 }	
 void app_main(void)
 {
@@ -87,7 +149,21 @@ void app_main(void)
     ESP_LOGI(TAG, "I2C initialized successfully");
 	
     lcd_init();
+    
+    // Cac bien de lay du lieu thoi tiet
+	const char* ssid = "yourssid"; //sID Ten mang Wifi ket noi	
+	const char* password = "yourpassword";	//Mat khau mang Wifi can ket noi
+	
+	String URL = "https://api.openweathermap.org/data/2.5/weather?lat=10.905124435118228&lon=106.76969263664785&appid=edb241abb24109d87f94bf90b89f38bf";
+	String ApiKey = "edb241abb24109d87f94bf90b89f38bf";
+	
+	String lat = "10.905124435118228"; 
+	String lon = "106.76969263664785";
+    // In du lieu thoi tiet
+	Print_Weather_Data(ssid,password,URL,ApiKey,lat,lon);    
+    
     lcd_clear();
+    
     lcd_put_cur(0, 4);
     lcd_send_string("00:00:00");
     lcd_put_cur(1, 3);
@@ -98,6 +174,8 @@ void app_main(void)
    // CDate date; 
 //    Khoi tao timer
     counter = 86399;
+
+	
 	const esp_timer_create_args_t periodic_timer_args ={
 		.callback = &Digital_Clock,
 		.name = "periodic"
@@ -106,7 +184,7 @@ void app_main(void)
 	
 	esp_timer_create(&periodic_timer_args,&periodic_timer);
 	while (1){
-	esp_timer_start_periodic(periodic_timer,1000000 - cpu_time_used*1000 );
+	esp_timer_start_periodic(periodic_timer,1000000 - elapsed_time );
 	}
 	
 }
