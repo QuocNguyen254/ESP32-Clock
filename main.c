@@ -239,12 +239,20 @@ void Digital_Clock1(void *arg)
         counter = 0;
         CDate_Increment(&date);
       }
+      gpio_intr_disable(ADD_BUT); 
+      gpio_intr_disable(SUB_BUT);  
     }else if (change_flag==2){ // Che do dieu chinh thoi gian
       lcd_set_cursor(1, 0);
       lcd_write_string("00:00:00");
       lcd_set_cursor(0, 1);
       lcd_write_string("00/00/0000");
       Print_Date(hour,minute,second,date.day,date.month,date.year); 
+      gpio_isr_handler_add(ADD_BUT, gpio_isr_handler_1,NULL);
+      gpio_intr_enable(ADD_BUT); 
+      gpio_isr_handler_add(SUB_BUT, gpio_isr_handler_2,NULL);
+      gpio_intr_enable(SUB_BUT);  
+      // gpio_isr_handler_add(CUR_BUT, gpio_isr_handler_3,NULL);
+      // gpio_intr_enable(CUR_BUT);  
 
     }else if (change_flag==3){ // Che do bam gio 
     gpio_isr_handler_add(START_STOP_BUT, gpio_isr_handler_5,NULL);
