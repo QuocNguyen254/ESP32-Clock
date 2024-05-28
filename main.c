@@ -29,7 +29,7 @@ int tmp_month ;
 int tmp_year ;
 int hour, minute, second;
 
-int change_flag = 0;
+int change_flag = 1;
 int press_flag = 1;
 int press_flag1 = 1;
 
@@ -63,34 +63,15 @@ void Print_String(char* str,int collumn,int row){
 }
 static void IRAM_ATTR gpio_isr_handler_1(void *arg)
 {
-  start_time = esp_timer_get_time();
   gpio_intr_disable(ADD_BUT);
-  gpio_isr_handler_remove(ADD_BUT);
+  //Code for ADD
 
-  date.year+=3;
-  Print_Date(hour,minute,second,date.day,date.month,date.year);
-
-  gpio_isr_handler_add(ADD_BUT, gpio_isr_handler_1, NULL);
-  gpio_intr_enable(ADD_BUT);
-
-  end_time = esp_timer_get_time();
-  elapsed_time = (double)(end_time - start_time);
 }
 
 static void IRAM_ATTR gpio_isr_handler_2(void *arg)
 {
-  start_time = esp_timer_get_time();
   gpio_intr_disable(SUB_BUT);
-  gpio_isr_handler_remove(SUB_BUT);
-
-  date.year-=3;
-  Print_Date(hour,minute,second,date.day,date.month,date.year);
-
-  gpio_isr_handler_add(SUB_BUT, gpio_isr_handler_2, NULL);
-  gpio_intr_enable(SUB_BUT);
-
-  end_time = esp_timer_get_time();
-  elapsed_time = (double)(end_time - start_time);
+  //Code for SUB
 }
 
 // static void IRAM_ATTR gpio_isr_handler_3(void *arg)
@@ -127,116 +108,32 @@ static void IRAM_ATTR gpio_isr_handler_2(void *arg)
 
 static void IRAM_ATTR gpio_isr_handler_4(void *arg)
 {
-  start_time = esp_timer_get_time();
   gpio_intr_disable(CHANGE_BUT);
-  gpio_isr_handler_remove(CHANGE_BUT);
-  // while(1){
-  //   if (press_flag==1){
-  //   press_flag = 0;
-  //   if (change_flag==2) change_flag = 0; 
-  //   else change_flag+=1;
-
-  //   if (change_flag==1){ //Chuc nang bam gio
-  //       while(1){
-  //         Print_String(30,4,0);
-  //         Print_String(30,7,0);
-  //         Print_String(30,10,0); 
-  //       }
-
-  //   }else if (change_flag==2){ // Chuc nang bao thuc 
-  
-
-  //   }else{
-      
-  //   }
- 
-  //   }else{
-  //     press_flag=1;
-  //     break;
-  //   }
-  // }
-  while (1) {
-        if (press_flag == 1) {
-            press_flag = 0;
- 
-                while (1) {
-                    Print_Number(30, 4, 0);
-                    Print_Number(30, 7, 0);
-                    Print_Number(30, 10, 0);
-                    
-                    // Thực hiện việc kiểm tra và thoát khỏi vòng lặp khi cần thiết
-                    if (press_flag == 1) {
-                        press_flag = 0;
-                        break;
-                    }
-                }
- 
-        } else {
-            press_flag = 1;
-            break; // Thoát khỏi vòng lặp while(1)
-        }
-    }
-
-  gpio_isr_handler_add(CHANGE_BUT, gpio_isr_handler_4, NULL);
-  gpio_intr_enable(CHANGE_BUT);
-  end_time = esp_timer_get_time();
-  elapsed_time = (double)(end_time - start_time);
-
+  if (change_flag!=3){
+      change_flag++;
+  }else{
+      change_flag=1;
+  }
 }
 static void IRAM_ATTR gpio_isr_handler_5(void *arg)
 {
-    gpio_intr_disable(START_STOP_BUT);
-    // gpio_isr_handler_remove(START_STOP_BUT);
-    date.year++;
-    // gpio_isr_handler_remove(START_STOP_BUT);
-
-  // gpio_isr_handler_remove(CHANGE_BUT);
-
-    // if (press_flag1==1){
-    //   press_flag1=0;
-    //   while(1){
-    //     tmp_counter++;
-    //     tmp1 = tmp_counter;
-    //     tmp_hour = tmp / 3600;
-    //     tmp1 = tmp % 3600;
-    //     tmp_minute = tmp / 60;
-    //     tmp1 = tmp % 60;
-    //     tmp_second = tmp;
-    //     Print_String(tmp_hour,4,0);
-    //     Print_String(tmp_minute,7,0);
-    //     Print_String(tmp_second,10,0);
-
-    //     gpio_isr_handler_add(START_STOP_BUT, gpio_isr_handler_5, NULL);
-    //     gpio_intr_enable(START_STOP_BUT);
-    //   }
-    // }else{
-    //   press_flag1=1;     
-    //   while(1){
-    //   Print_String(tmp_hour,4,0);
-    //   Print_String(tmp_minute,7,0);
-    //   Print_String(tmp_second,10,0); 
-    //   gpio_isr_handler_add(START_STOP_BUT, gpio_isr_handler_5, NULL);
-    //   gpio_intr_enable(START_STOP_BUT);
-    //   break;
-    //   }
-    // }
-  gpio_isr_handler_add(START_STOP_BUT, gpio_isr_handler_5, NULL);
-  gpio_intr_enable(START_STOP_BUT);
+  gpio_intr_disable(START_STOP_BUT);  
+  if (press_flag1==1){
+    press_flag1 = 0;
+  }else{
+    press_flag1 = 1;
+  }
 }
 static void IRAM_ATTR gpio_isr_handler_6(void *arg)
 {
   gpio_intr_disable(RESET_BUT);
-  gpio_isr_handler_remove(RESET_BUT);
-  tmp_hour =0;
+  tmp_counter = 0;
+  tmp_hour = 0;
   tmp_minute = 0;
   tmp_second = 0;
-  gpio_isr_handler_add(RESET_BUT, gpio_isr_handler_6, NULL);
-  gpio_intr_enable(RESET_BUT);
-
 }
 
 void Print_Date(int hour,int minute,int second,int day,int month,int year){
-
   sprintf(buffer, "%02d", hour);
   lcd_set_cursor(1, 0);
   lcd_write_string(buffer);
@@ -313,6 +210,68 @@ void Digital_Clock(void *arg)
   end_time = esp_timer_get_time();
   elapsed_time = (double)(end_time - start_time);
 }
+void Digital_Clock1(void *arg)
+{
+  start_time = esp_timer_get_time();
+  counter++;
+  if (press_flag1==0) tmp_counter++;
+
+    if (change_flag==1){ // Che do man hinh chinh
+      lcd_set_cursor(1, 0);
+      lcd_write_string("00:00:00");
+      lcd_set_cursor(0, 1);
+      lcd_write_string("00/00/0000");
+
+      Print_String("H:",11,0);
+      Print_String("T:",11,1);
+      tmp = counter;
+      hour = tmp / 3600;
+      tmp = tmp % 3600;
+      minute = tmp / 60;
+      tmp = tmp % 60;
+      second = tmp;
+     
+      // if (change_flag!=1)
+      Print_Date(hour,minute,second,date.day,date.month,date.year);  
+      
+      if (counter == 86400)
+      {
+        counter = 0;
+        CDate_Increment(&date);
+      }
+    }else if (change_flag==2){ // Che do dieu chinh thoi gian
+      lcd_set_cursor(1, 0);
+      lcd_write_string("00:00:00");
+      lcd_set_cursor(0, 1);
+      lcd_write_string("00/00/0000");
+      Print_Date(hour,minute,second,date.day,date.month,date.year); 
+
+    }else if (change_flag==3){ // Che do bam gio 
+    gpio_isr_handler_add(START_STOP_BUT, gpio_isr_handler_5,NULL);
+    gpio_intr_enable(START_STOP_BUT);
+    lcd_set_cursor(0, 1);
+    lcd_write_string("          ");
+    if(press_flag1==0){
+      tmp1 = tmp_counter;
+      tmp_hour = tmp1 / 3600;
+      tmp1 = tmp1 % 3600;
+      tmp_minute = tmp1 / 60;
+      tmp1 = tmp1 % 60;
+      tmp_second = tmp1;
+      }
+      gpio_intr_disable(ADD_BUT);
+      gpio_intr_disable(SUB_BUT);
+      gpio_isr_handler_add(RESET_BUT, gpio_isr_handler_6, NULL);
+      gpio_intr_enable(RESET_BUT);   
+
+      Print_Number(tmp_hour,1,0);
+      Print_Number(tmp_minute,4,0);
+      Print_Number(tmp_second,7,0);
+    }
+    gpio_isr_handler_add(CHANGE_BUT, gpio_isr_handler_4, NULL);
+    gpio_intr_enable(CHANGE_BUT);
+    end_time = esp_timer_get_time();
+}
 
 void app_main()
 {
@@ -323,13 +282,6 @@ void app_main()
   setDHTgpio(GPIO_NUM_17);
   // set up the LCD's number of columns and rows:
   lcd_begin(16, 2);
-  lcd_set_cursor(1, 0);
-  lcd_write_string("00:00:00");
-  lcd_set_cursor(0, 1);
-  lcd_write_string("00/00/0000");
-
-  Print_String("H:",11,0);
-  Print_String("T:",11,1);
 
   date.day = 0;
   date.month = 0;
@@ -387,15 +339,15 @@ void app_main()
   // esp_err_t err5 = esp_intr_alloc(ETS_GPIO_INTR_SOURCE, intr_alloc_flags2,gpio_isr_handler_6, (void*)RESET_BUT , NULL);
 
 
-  gpio_intr_enable(ADD_BUT);
-  gpio_intr_enable(SUB_BUT);
-  gpio_intr_enable(CHANGE_BUT);
-  gpio_intr_enable(START_STOP_BUT);
-  gpio_intr_enable(RESET_BUT);
+  // gpio_intr_enable(ADD_BUT);
+  // gpio_intr_enable(SUB_BUT);
+  // gpio_intr_enable(CHANGE_BUT);
+  // gpio_intr_enable(START_STOP_BUT);
+  // gpio_intr_enable(RESET_BUT);
   elapsed_time = 0;
 
   const esp_timer_create_args_t periodic_timer_args ={
-    .callback = &Digital_Clock,
+    .callback = &Digital_Clock1,
     .name = "periodic"
   };
   esp_timer_handle_t periodic_timer;
